@@ -44,3 +44,76 @@ docker compose -f docker-compose.yaml -f docker-compose.observability.yaml --env
 ```bash
 docker compose -f docker-compose.yaml -f docker-compose.observability.yaml --env-file .env.dev -p cosmos-dp420 exec cosmos cosmoshell.sh
 ```
+
+## SEEDING DATA
+
+### How it works
+
+The emulator auto-runs `.csh` scripts from `cosmos-init/` on first start (alphabetical order). The init scripts create the databases and containers. Data is loaded either via the shell scripts or the Python loader (see below).
+
+Because `cosmos-init/` must be flat (no subdirectories), each database has its own subfolder (`cosmos-init/database-v1/`, etc.). **Copy the contents of the target database folder into `cosmos-init/` before starting the emulator**, then remove them after.
+
+The emulator skips init on subsequent starts if the data volume (`${VOLUMES_PATH}/cosmos/data`) already contains data.
+
+### Shell scripts (small containers only)
+
+Shell scripts work for containers with small/flat documents. Containers with embedded arrays (e.g. `salesOrder` with embedded `details`) time out on the emulator for large datasets — use the Python loader for those.
+
+### Python loader (large or embedded-array containers)
+
+Install once:
+
+```bash
+python3 -m pip install azure-cosmos
+```
+
+The loader connects directly to the running emulator, upserts each document with retry on timeout, and is safe to re-run (skips already-inserted docs).
+
+**The emulator must be running before you execute the loader.**
+
+Both `--endpoint` and `--key` are required. Run one database at a time:
+
+- database-v1
+
+```bash
+python3 load-data.py \
+  --endpoint <endpoint> --key <account-key> \
+  --database database-v1 \
+  --data-dir ./mslearn-cosmosdb-modules-central-main/data/fullset/database-v1
+```
+
+- database-v2
+
+```bash
+python3 load-data.py \
+  --endpoint <endpoint> --key <account-key> \
+  --database database-v2 \
+  --data-dir ./mslearn-cosmosdb-modules-central-main/data/fullset/database-v2
+```
+
+- database-v3
+
+```bash
+python3 load-data.py \
+  --endpoint <endpoint> --key <account-key> \
+  --database database-v3 \
+  --data-dir ./mslearn-cosmosdb-modules-central-main/data/fullset/database-v3
+```
+
+- database-v4
+
+```bash
+python3 load-data.py \
+  --endpoint <endpoint> --key <account-key> \
+  --database database-v4 \
+  --data-dir ./mslearn-cosmosdb-modules-central-main/data/fullset/database-v4
+```
+
+### Data volumes per database
+
+| Database | Containers seeded | Total documents |
+|---|---|---|
+| database-v1 | customer, customerAddress, customerPassword, product, productCategory, productTag, productTags, salesOrder, salesOrderDetail | 210,827 |
+| database-v2 | customer, product, productCategory, productTag, salesOrder | 51,116 |
+| database-v3 | customer, product, productCategory, productTag, salesOrder | 51,116 |
+| database-v4 | customer (includes salesOrders), product, productMeta | 51,116 |
