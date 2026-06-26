@@ -13,10 +13,6 @@ Signin with the corporate account and use an "Opticom Subscription" subscription
 az login
 ```
 
-```bash
-az acr login -n caropticom
-```
-
 We use [docker compose](https://docs.docker.com/compose/) to run dependencies.
 
 From a root directory of project run commands:
